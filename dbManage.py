@@ -44,3 +44,17 @@ def readPatient(connection, name):
         return result
     except:
         print ("DB Failure")
+
+
+
+def readResources(connection):
+    
+    try:
+        with connection.cursor() as cursor:
+            # Read a single record
+            sql = "SELECT * FROM `recursos`"
+            cursor.execute(sql)
+            result = cursor.fetchall()
+        return result
+    except:
+        print ("DB Failure")

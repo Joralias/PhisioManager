@@ -20,7 +20,7 @@ from kivy.uix.checkbox import CheckBox
 from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 
-from libFisio import myThread,checkNewPatientInDB, registerPatientToDB, getNumberOfPatients
+from libFisio import myThread,checkNewPatientInDB, registerPatientToDB, getNumberOfPatients, resourceInit
 import threading
 
 from functools import partial
@@ -146,9 +146,10 @@ class MainGrid(GridLayout):
         self.progress_status.patients = []
         self.progress_status.pb = []
         self.progress_status.treatements = []
-
         self.add_widget(self.progress_status)
 
+        #inicializacion de los recursos
+        resourceInit()
 
 
     def startPatient(self, instance):

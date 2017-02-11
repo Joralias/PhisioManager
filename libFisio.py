@@ -2,19 +2,22 @@ import dbManage
 import ctypes  # An included library with Python install.
 import time
 import threading
-from enum import Enum
-
-#class Treatement(Enum):
-#    UNASIGNED = 0
-#    MAGNETO = 1
-#    CORRIENTES = 2
-#    MANUAL = 3
-#    BICI = 4
-#    EJERCICIOS = 5
-#    CALOR = 6
 
 
 patients = []
+resources=[]
+
+
+def resourceInit():
+    #leer base datos y crear una instancia del recurso por cada uno
+    connection = dbManage.connect("fisioproject", "root", "1234")
+
+    resourcesDB = dbManage.readResources(connection)
+
+    dbManage.disconnect(connection)
+    for resource in resourcesDB:
+        for i in range(resource['cantidad']):
+            resources.append(Resource(resource['nombre']+str(resource['cantidad']), resource['nombre']))
 
 
 
@@ -60,10 +63,12 @@ def arrivePatient(name):
     patients.append(patient)
    
     #simulacion (funcion futura)
+
     #selectTreatement (otra funcion futura)
     #ejecuta el treatment
 
-    patient.performTreatement(patient.future_treatements[0])
+    selected_treatement = patient.future_treatements[0]
+    patient.performTreatement(selected_treatement)
 
 
 class myThread (threading.Thread):
@@ -81,6 +86,20 @@ class myThread (threading.Thread):
         print ("Starting " + self.name)
         arrivePatient(self.name)
         print (self.name + " se marcho ")
+
+
+
+class Resource():
+    def __init__(self, resource_id, type_resource):
+        self.type_resource = type_resource
+        self.resource_id = resource_id
+        self.available = True
+
+    def holdResource(self):
+        self.availabre = False
+
+    def releaseResource(self):
+        self.availabre = True
 
 
 
@@ -105,13 +124,13 @@ class Patient():
         self.finished_treatements = []
         self.future_treatements = []
 
+        #create the future_treatements array
         if self.magneto_time > 0: self.future_treatements.append(Treatement('MAGNETO',15))
         if self.calor_time > 0: self.future_treatements.append(Treatement('CALOR',10))
         if self.corrientes_time > 0: self.future_treatements.append(Treatement('CORRIENTES', 10))
         if self.manual_time > 0: self.future_treatements.append(Treatement('MANUAL',15))
         if self.ejercicios_time > 0: self.future_treatements.append(Treatement('EJERCICIOS',15))
         if self.bici_time > 0: self.future_treatements.append(Treatement('BICI',15))
-
 
 
     def readPatient(self):
@@ -151,8 +170,6 @@ class Patient():
         print (self.name + " ha terminado "+ self.actual_treatement.name)
 
         self.endTreatement(self.actual_treatement)
-
-
 
 
     def endTreatement(self, finished_treatement):
