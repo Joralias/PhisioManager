@@ -7,6 +7,53 @@ patients = []
 resources=[]
 
 
+def sortTreatements():
+    for patient in patients:
+        needs_sorting = False
+        print ("EL PATIENT: "+patient.name)
+        indexes_to_sort = []
+        for otherPatient in [x for x in patients if x !=  patient]:
+            print ("OTHER PATIENT: "+otherPatient.name)
+            for i in range(min(len(patient.future_treatements), len(otherPatient.future_treatements))):
+                if patient.future_treatements[i].name==otherPatient.future_treatements[i].name:
+                    print("NEEDS SORTING")
+                    #for resource in resources:
+                        #if resource.type_treatement.upper() == otherPatient.future_treatements[i].upper(): 
+                            #if not resource.available:
+                    needs_sorting = True
+                    indexes_to_sort.append(i)
+                            #else:
+                            #    resource.holdResource()
+
+                else:
+                    needs_sorting = False
+
+            if needs_sorting:
+                for index in indexes_to_sort:
+                    print("INDEX " +str(index))
+                    print("LEN " +str(len(otherPatient.future_treatements)))
+                    if len(otherPatient.future_treatements)>index+1:
+                        otherPatient.future_treatements[index], otherPatient.future_treatements[index+1] = otherPatient.future_treatements[index+1], otherPatient.future_treatements[index]
+                    elif index !=0:
+                        otherPatient.future_treatements[index], otherPatient.future_treatements[index-1] = otherPatient.future_treatements[index-1], otherPatient.future_treatements[index]
+                    else:
+                        otherPatient.future_treatements[index], otherPatient.future_treatements[0] = otherPatient.future_treatements[0], otherPatient.future_treatements[index]
+
+
+    #releaseAllResources()
+
+
+
+
+
+def releaseAllResources():
+    for resource in resources:
+        resource.releaseResource()
+
+def holdAllResources():
+    for resource in resources:
+        resource.holdResource()
+
 def resourceInit():
     connection = dbManage.connect("fisioproject", "root", "1234")
 
@@ -16,8 +63,6 @@ def resourceInit():
     for resource in resourcesDB:
         for i in range(resource['cantidad']):
             resources.append(Resource(resource['nombre']+str(i), resource['nombre']))
-
-
 
 
 
@@ -63,6 +108,9 @@ def arrivePatient(name):
 
     #selectTreatement (otra funcion futura)
     #ejecuta el treatment
+
+    #sort treatements in order noone to wait
+    sortTreatements()
 
     selected_treatement = patient.future_treatements[0]
 

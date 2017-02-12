@@ -2,7 +2,6 @@
 #qpy:2
 #qpy:kivy
 
-
 from kivy.uix.popup import Popup
 from kivy.app import App
 from kivy.uix.gridlayout import GridLayout
