@@ -156,7 +156,7 @@ class MainGrid(GridLayout):
         #chek if there is something written
         if self.patient.text!="":
             
-            if checkNewPatientInDB(self.patient.text):                
+            if checkNewPatientInDB(self.patient.text):    
                 popup = pop()
                 popup.show_it()
 
@@ -170,17 +170,12 @@ class MainGrid(GridLayout):
                     thread = myThread(self.patient.text)
                     thread.start()
                     self.addPatientStatus()
-                    # self.progress_status.rows +=1
-                    # self.progress_status.pb.append(ProgressBar(max=100))
-                    # self.progress_status.treatements.append(Label(text='Iniciando Tratamiento'))  
-                    # self.progress_status.patients.append(Label(text=self.patient.text))     
-                    # self.progress_status.add_widget(self.progress_status.patients[-1])
-                    # self.progress_status.add_widget(self.progress_status.treatements[-1])
-                    # self.progress_status.add_widget(self.progress_status.pb[-1])
+
                 else:
                     popup = Popup(title='Paciente ya iniciado', content=Label(text='El paciente introducido ya esta en tratamiento'),size_hint=(None, None), size=(400, 400))
                     popup.open()                          
                     
+        self.patient.text =""            
 
     def addPatientStatus(self):
         self.progress_status.rows +=1
@@ -210,22 +205,10 @@ class MainGrid(GridLayout):
         if len(threading.enumerate())==1 and len(self.progress_status.patients)>0: # just mainthread but some patients still in array
             self.deletePatientStatus(0)
 
-        #for t in threading.enumerate():
-            #if t.name == 'MainThread': continue
         for t in [x for x in threading.enumerate() if x.name !=  'MainThread']: #excluding mainTread       
             index = 0
             for patient in self.progress_status.patients: 
                 if not any(x.name == patient.text for x in threading.enumerate()): #if there is no thread for this patient.
-                    # print ("BORRO PATIENT")
-                    # popup = Popup(title='Paciente Listo', content=Label(text='El paciente ' +patient.text +' ya ha concluido su sesión de hoy'),size_hint=(None, None), size=(400, 400))
-                    # popup.open()                  
-                    # self.progress_status.remove_widget(self.progress_status.patients[index])
-                    # self.progress_status.remove_widget(self.progress_status.treatements[index])
-                    # self.progress_status.remove_widget(self.progress_status.pb[index])
-
-                    # self.progress_status.patients.pop(index)
-                    # self.progress_status.treatements.pop(index)
-                    # self.progress_status.pb.pop(index)
                     self.deletePatientStatus(index)
                     continue
 
@@ -238,8 +221,6 @@ class MainGrid(GridLayout):
 
             
 
-        #for row in self.progress_status.pb:
-            #row.value = row.value + 10
         
 
 

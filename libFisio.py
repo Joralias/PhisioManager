@@ -9,7 +9,6 @@ resources=[]
 
 
 def resourceInit():
-    #leer base datos y crear una instancia del recurso por cada uno
     connection = dbManage.connect("fisioproject", "root", "1234")
 
     resourcesDB = dbManage.readResources(connection)
@@ -17,7 +16,7 @@ def resourceInit():
     dbManage.disconnect(connection)
     for resource in resourcesDB:
         for i in range(resource['cantidad']):
-            resources.append(Resource(resource['nombre']+str(resource['cantidad']), resource['nombre']))
+            resources.append(Resource(resource['nombre']+str(i), resource['nombre']))
 
 
 
@@ -68,6 +67,7 @@ def arrivePatient(name):
     #ejecuta el treatment
 
     selected_treatement = patient.future_treatements[0]
+
     patient.performTreatement(selected_treatement)
 
 
@@ -90,16 +90,17 @@ class myThread (threading.Thread):
 
 
 class Resource():
-    def __init__(self, resource_id, type_resource):
-        self.type_resource = type_resource
+    def __init__(self, resource_id, type_treatement):
+        self.type_treatement = type_treatement
         self.resource_id = resource_id
         self.available = True
 
     def holdResource(self):
-        self.availabre = False
+        print("Holding: "+self.resource_id)
+        self.available = False
 
     def releaseResource(self):
-        self.availabre = True
+        self.available = True
 
 
 
@@ -131,7 +132,7 @@ class Patient():
         if self.manual_time > 0: self.future_treatements.append(Treatement('MANUAL',15))
         if self.ejercicios_time > 0: self.future_treatements.append(Treatement('EJERCICIOS',15))
         if self.bici_time > 0: self.future_treatements.append(Treatement('BICI',15))
-
+        self.waiting_treatement = Treatement('ESPERAR',0)
 
     def readPatient(self):
         
@@ -151,13 +152,37 @@ class Patient():
 
     def performTreatement(self,treatement):
 
-        self.actual_treatement = treatement
+        self.actual_treatement = treatement #first assing and the modify in the for loop
+        for resource in resources:
+            if resource.type_treatement.upper() == treatement.name.upper():
+                print (resource.resource_id)
+                print (resource.available)                
+                if resource.available == True:
+                    self.actual_treatement = treatement
+                    resource.holdResource()
+                    #at soon as one of the resources type is available, stop searching
+                    break
+                else:
+                    self.actual_treatement = self.waiting_treatement
 
         print(self.name+ ": Tratamiento empezado: " +self.actual_treatement.name)
-        start_treatement_time = time.time()
+       
 
         threading.current_thread().treatement = self.actual_treatement.name
 
+
+        while self.actual_treatement == self.waiting_treatement: #wait if there is no availability
+            threading.current_thread().progress = 50
+            for resource in resources:
+                if resource.type_treatement.upper() == treatement.name.upper():
+                    if resource.available == True:
+                        self.actual_treatement = treatement
+                        print(self.name+ ": Tratamiento empezado (despues de esperar): " +self.actual_treatement.name)
+                        threading.current_thread().treatement = self.actual_treatement.name 
+                        resource.holdResource()            
+                    time.sleep(1)
+
+        start_treatement_time = time.time()
         elapsed_time = 0
         while self.actual_treatement.time - elapsed_time > 0:
             elapsed_time = (time.time()-start_treatement_time)
@@ -174,13 +199,21 @@ class Patient():
 
     def endTreatement(self, finished_treatement):
 
+
+        for resource in resources:
+            if resource.type_treatement.upper() == finished_treatement.name.upper():
+                resource.releaseResource()
+
+        for t in self.future_treatements:
+            print (t.name)
+
         self.future_treatements.remove(finished_treatement)
         self.finished_treatements.append(finished_treatement)
 
-
         if len(self.future_treatements)>0:
             print (self.name+ ": Tiempo de cambio de tratamiento....")
-            time.sleep(3)
+            threading.current_thread().treatement = "Cambiando"+ "\n"+ "Tratamiento"
+            time.sleep(3)     
             self.performTreatement(self.future_treatements[0])
  
         else:
