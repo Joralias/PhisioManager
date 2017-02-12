@@ -1,5 +1,4 @@
 import dbManage
-import ctypes  # An included library with Python install.
 import time
 import threading
 
@@ -30,7 +29,6 @@ def getNumberOfPatients():
 def registerPatientToDB(name,values):
     
     connection = dbManage.connect("fisioproject", "root", "1234")
-    #ctypes.windll.user32.MessageBoxW(0, "Introduce 'Y' en los tratamientos que apliquen", "Mensaje", 1)    
     
     magneto_time = 15 if values[0] ==True else 0
     corrientes_time = 10 if values[1] ==True else 0
