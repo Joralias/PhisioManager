@@ -19,11 +19,64 @@ from kivy.uix.checkbox import CheckBox
 from kivy.uix.progressbar import ProgressBar
 from kivy.clock import Clock
 
-from libFisio import myThread,checkNewPatientInDB, registerPatientToDB, getNumberOfPatients, resourceInit
+from libFisio import myThread,checkNewPatientInDB, registerPatientToDB, getNumberOfPatients, resourceInit, updateResourceToDB
 import threading
 
 from functools import partial
 
+
+
+
+class ResourceGrid(GridLayout):
+
+
+    def insertResource(self, instance):
+        quantities = [('magneto',self.magnetos.text),('corrientes',self.corrientes.text),('calor',self.calores.text),('bici',self.bicis.text),('manual',self.fisios.text)]
+
+        updateResourceToDB(quantities) 
+        resourceInit()
+        self.backToMainScreen()
+
+    def backToMainScreen(self,*args):
+        sm.current = 'main'
+
+    def __init__(self, **kwargs):
+        super(ResourceGrid, self).__init__(**kwargs)
+        self.cols = 2
+        self.row = 5
+        self.add_widget(Label(text='Recurso'))
+        self.add_widget(Label(text='Cantidad'))
+
+
+        self.add_widget(Label(text='Magneto'))
+        self.magnetos = TextInput(multiline=False)
+        self.add_widget(self.magnetos)
+
+        self.add_widget(Label(text='Corrientes'))
+        self.corrientes = TextInput(multiline=False)
+        self.add_widget(self.corrientes)
+
+        self.add_widget(Label(text='Calor'))
+        self.calores = TextInput(multiline=False)
+        self.add_widget(self.calores)
+
+        self.add_widget(Label(text='Bici'))
+        self.bicis = TextInput(multiline=False)
+        self.add_widget(self.bicis)
+
+        self.add_widget(Label(text='Fisios'))
+        self.fisios = TextInput(multiline=False)
+        self.add_widget(self.fisios)
+
+
+
+        self.Back = Button(text="Atrás")
+        self.Back.bind(on_press=self.backToMainScreen)
+        self.add_widget(self.Back)
+
+        self.updateResource = Button(text="Actualizar Recursos")
+        self.updateResource.bind(on_press=self.insertResource)
+        self.add_widget(self.updateResource)
 
 
 
@@ -38,10 +91,9 @@ class RegisterGrid(GridLayout):
             registerPatientToDB(self.patient.text,checkbox_status)
             print("termine de registrar")
             thread = myThread(self.patient.text)
-            thread.start()    
-            print(threading.enumerate())
+            thread.start()
             sm.current = 'main'
-            sm.current_screen.grid.addPatientStatus()
+            sm.current_screen.grid.addPatientStatus(True, self.patient.text)
             sm.current_screen.grid.updateGrid()
 
         else:
@@ -94,8 +146,19 @@ class pop(Widget):
 
     def sayYesToRegister(self,*args):
 
+
         self.main_pop.dismiss()
         sm.current = 'register'
+
+        #init values
+        sm.current_screen.grid.patient.text = ""
+        sm.current_screen.grid.cbmag.active = False
+        sm.current_screen.grid.cbcor.active = False
+        sm.current_screen.grid.cbcal.active = False
+        sm.current_screen.grid.cbbic.active = False
+        sm.current_screen.grid.cbman.active = False
+        sm.current_screen.grid.cbeje.active = False
+
 
     def show_it(self):
         self.box=FloatLayout()
@@ -130,13 +193,19 @@ class MainGrid(GridLayout):
     def __init__(self, **kwargs):
         super(MainGrid, self).__init__(**kwargs)
         self.cols = 2
-        self.row = 2
+        self.row = 3
         self.add_widget(Label(text='Paciente'))
         self.patient = TextInput(multiline=False)
         self.add_widget(self.patient)
         self.start = Button(text="START")
         self.start.bind(on_press=self.startPatient)
         self.add_widget(self.start)
+
+
+        self.Resources = Button(text="Recursos")
+        self.Resources.bind(on_press=self.updateResources)
+        self.add_widget(self.Resources)
+
 
         #last square, hen progress is set
         self.progress_status = GridLayout(padding=[0,0,30,0])
@@ -147,9 +216,10 @@ class MainGrid(GridLayout):
         self.progress_status.treatements = []
         self.add_widget(self.progress_status)
 
-        #inicializacion de los recursos
-        resourceInit()
 
+
+    def updateResources(self, *args):
+        sm.current = 'resources'
 
     def startPatient(self, instance):
         #chek if there is something written
@@ -176,18 +246,24 @@ class MainGrid(GridLayout):
                     
         self.patient.text =""            
 
-    def addPatientStatus(self):
+    def addPatientStatus(self, from_register = False, patient_from_register = None):
+
+        if from_register:
+            patient_text = patient_from_register
+        else:
+            patient_text = self.patient.text
+
         self.progress_status.rows +=1
         self.progress_status.pb.append(ProgressBar(max=100))
         self.progress_status.treatements.append(Label(text='Iniciando Tratamiento'))  
-        self.progress_status.patients.append(Label(text=self.patient.text))     
+        self.progress_status.patients.append(Label(text=patient_text))     
         self.progress_status.add_widget(self.progress_status.patients[-1])
         self.progress_status.add_widget(self.progress_status.treatements[-1])
         self.progress_status.add_widget(self.progress_status.pb[-1])
 
     def deletePatientStatus(self, index):
 
-        print ("BORRO PATIENT")
+        print ("ERASE PATIENT")
         popup = Popup(title='Paciente Listo', content=Label(text='El paciente ' +self.progress_status.patients[index].text +' ha concluido su sesion de hoy'),size_hint=(None, None), size=(400, 400))
         popup.open()                  
         self.progress_status.remove_widget(self.progress_status.patients[index])
@@ -206,7 +282,7 @@ class MainGrid(GridLayout):
 
         for t in [x for x in threading.enumerate() if x.name !=  'MainThread']: #excluding mainTread       
             index = 0
-            for patient in self.progress_status.patients: 
+            for patient in self.progress_status.patients:
                 if not any(x.name == patient.text for x in threading.enumerate()): #if there is no thread for this patient.
                     self.deletePatientStatus(index)
                     continue
@@ -233,23 +309,39 @@ class MainScreen(Screen):
 class RegisterScreen(Screen):
     def __init__(self, **kwargs):
         super(RegisterScreen, self).__init__(**kwargs)
-        self.add_widget(RegisterGrid())
+        self.grid = RegisterGrid()
+        self.add_widget(self.grid)
+
+class ResourceScreen(Screen):
+    def __init__(self, **kwargs):
+        super(ResourceScreen, self).__init__(**kwargs)
+        self.grid = ResourceGrid()
+        self.add_widget(self.grid)
+
 
 
 sm = ScreenManager()
+
+
 sm.add_widget(MainScreen(name='main'))
 sm.add_widget(RegisterScreen(name='register'))
+sm.add_widget(ResourceScreen(name='resources'))
+
 
 
 class MyApp(App):
     def build(self):
         def update(self):
             
+            #inicializacion de los recursos
+            if not resourceInit():
+                sm.current = 'resources'
+
             if sm.current_screen.name == 'main':
                 sm.current_screen.grid.updateGrid()
             
 
-        Clock.schedule_interval(update, 0.5)
+        Clock.schedule_interval(update, 1)
         return sm
 
 if __name__ == '__main__':

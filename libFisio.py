@@ -10,10 +10,8 @@ resources=[]
 def sortTreatements():
     for patient in patients:
         needs_sorting = False
-        print ("EL PATIENT: "+patient.name)
         indexes_to_sort = []
         for otherPatient in [x for x in patients if x !=  patient]:
-            print ("OTHER PATIENT: "+otherPatient.name)
             for i in range(min(len(patient.future_treatements), len(otherPatient.future_treatements))):
                 if patient.future_treatements[i].name==otherPatient.future_treatements[i].name:
                     print("NEEDS SORTING")
@@ -25,10 +23,10 @@ def sortTreatements():
                             #else:
                             #    resource.holdResource()
 
-                else:
-                    needs_sorting = False
-
+               
+            print (needs_sorting)
             if needs_sorting:
+                print (indexes_to_sort)
                 for index in indexes_to_sort:
                     print("INDEX " +str(index))
                     print("LEN " +str(len(otherPatient.future_treatements)))
@@ -40,11 +38,15 @@ def sortTreatements():
                         otherPatient.future_treatements[index], otherPatient.future_treatements[0] = otherPatient.future_treatements[0], otherPatient.future_treatements[index]
 
 
-    #releaseAllResources()
 
+def updateResourceToDB(quantities):
 
+    connection = dbManage.connect()
+    
+    for resource in quantities:
+        dbManage.insertResources(connection,resource[0],resource[1])
 
-
+    dbManage.disconnect(connection)
 
 def releaseAllResources():
     for resource in resources:
@@ -55,14 +57,22 @@ def holdAllResources():
         resource.holdResource()
 
 def resourceInit():
-    connection = dbManage.connect("fisioproject", "root", "1234")
+    connection = dbManage.connect()
 
     resourcesDB = dbManage.readResources(connection)
-
+    print (resourcesDB)
+    
     dbManage.disconnect(connection)
-    for resource in resourcesDB:
-        for i in range(resource['cantidad']):
-            resources.append(Resource(resource['nombre']+str(i), resource['nombre']))
+
+    if len(resourcesDB) != 0:
+        for resource in resourcesDB:
+                for i in range(resource['cantidad']):
+                    resources.append(Resource(resource['nombre']+str(i), resource['nombre']))        
+        return True
+    else:
+        return False
+
+    
 
 
 
@@ -73,7 +83,7 @@ def getNumberOfPatients():
 
 def registerPatientToDB(name,values):
     
-    connection = dbManage.connect("fisioproject", "root", "1234")
+    connection = dbManage.connect()
     
     magneto_time = 15 if values[0] ==True else 0
     corrientes_time = 10 if values[1] ==True else 0
@@ -87,9 +97,8 @@ def registerPatientToDB(name,values):
     dbManage.disconnect(connection)
 
 
-
 def checkNewPatientInDB(patient):
-    connection = dbManage.connect("fisioproject", "root", "1234")
+    connection = dbManage.connect()
     patient_data = dbManage.readPatient(connection,patient)
     if patient_data==None:
         #new patient
@@ -182,9 +191,11 @@ class Patient():
 
     def readPatient(self):
         
-        connection = dbManage.connect("fisioproject", "root", "1234")
+        connection = dbManage.connect()
 
         patient_data = dbManage.readPatient(connection,self.name)
+        print (patient_data)
+        print ("##############")
         self.magneto_time = patient_data['magneto']
         self.calor_time =  patient_data['calor']
         self.corrientes_time =  patient_data['corrientes']
@@ -234,8 +245,6 @@ class Patient():
             elapsed_time = (time.time()-start_treatement_time)
             threading.current_thread().progress = (elapsed_time/self.actual_treatement.time)*100
             time.sleep(1)
-
-            #print ("%s: %s" % ( patient.name, time.ctime(time.time()) ))
 
         self.actual_treatement.time = 0
         print (self.name + " ha terminado "+ self.actual_treatement.name)
