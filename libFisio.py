@@ -7,6 +7,14 @@ patients = []
 resources=[]
 
 
+def optimalSortTreatements():
+
+    pass
+
+
+
+
+
 def sortTreatements():
     for patient in patients:
         needs_sorting = False
@@ -63,11 +71,10 @@ def resourceInit():
     print (resourcesDB)
     
     dbManage.disconnect(connection)
-
     if len(resourcesDB) != 0:
         for resource in resourcesDB:
-                for i in range(resource['cantidad']):
-                    resources.append(Resource(resource['nombre']+str(i), resource['nombre']))        
+            for i in range(resource['cantidad']):
+                resources.append(Resource(resource['nombre']+str(i), resource['nombre']))        
         return True
     else:
         return False
@@ -155,6 +162,8 @@ class Resource():
         self.available = False
 
     def releaseResource(self):
+        print("Releasing: "+self.resource_id)
+
         self.available = True
 
 
@@ -210,8 +219,15 @@ class Patient():
     def performTreatement(self,treatement):
 
         self.actual_treatement = treatement #first assing and the modify in the for loop
+        print ("resources")
+        print (resources)
         for resource in resources:
+            print ("resources")
+            print (resources)
+
             if resource.type_treatement.upper() == treatement.name.upper():
+
+                print ("Check availability")
                 print (resource.resource_id)
                 print (resource.available)                
                 if resource.available == True:

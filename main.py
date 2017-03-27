@@ -331,10 +331,15 @@ sm.add_widget(ResourceScreen(name='resources'))
 
 class MyApp(App):
     def build(self):
+        global resourcesInitialized
+        resourcesInitialized = resourceInit()
+
         def update(self):
+            global resourcesInitialized
             
             #inicializacion de los recursos
-            if not resourceInit():
+            if not resourcesInitialized:
+                resourcesInitialized = resourceInit()
                 sm.current = 'resources'
 
             if sm.current_screen.name == 'main':
